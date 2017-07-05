@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Chat</title>
+		<link rel="stylesheet" href="css/main.css">
+    </head
+    <body>
+		<header>
+		<h1>Momentary Tales</h1>
+		<h2>By Team 3</h2>
+		</header>
+		<div class="chat">
+			<img src="css/parchment.gif" />
+
+			<script type="text/javascript">var uname = prompt('Welcome! Please enter your name:')</script>
+			<!--<input type="text" class="chat-name" id="uname">-->
+			<p type="text" class="chat-name" id="uname" >
+			
+			//The name prompt must be filled
+			//The .value is needed to not get "undefined" as name
+			<script type="text/javascript">
+			while (uname === "") 
+			uname = prompt('Please enter your name:')
+			document.getElementById('uname').innerHTML = uname
+			document.getElementById('uname').value = uname
+			while (uname === null){
+                                window.location.href = "error.html";
+                                break;
+                        }
+
+			</script>
+			</p>
+			<div class="chat-messages"></div>
+			<textarea class="chat-textarea" placeholder="Type your message" autofocus></textarea>
+			<div class="chat-status">Status: <span>Idle</span></div>
+		</div>
+			
+		<script src="http://194.110.231.232:8081/socket.io/socket.io.js"></script>
+		<script src="http://www.google.com/jsapi" type="text/javascript"></script>
+		<script type="text/javascript">google.load("jquery", "1.4.2");</script>
+
+		<script>
+			(function() {
+				
+				var getNode = function(s) {
+					return document.querySelector(s)
+				},
+
+				//Get required nodes
+				status = getNode('.chat-status span'),
+				messages = getNode('.chat-messages'),
+				textarea = getNode('.chat-textarea'),
+				chatName = getNode('.chat-name'),
+
+				statusDefault = status.textContent,
+
+				setStatus = function(s) {
+					status.textContent = s;
+
+					if(s !== statusDefault) {
+						var delay = setTimeout(function() {
+							setStatus(statusDefault);
+							clearInterval(delay);
+						}, 3000);
+					}
+				};
+
+				try {
+					var socket = io.connect('http://194.110.231.232:8081');
+					
+
+				} catch(e) {
+					// Set status to warn user
+				}
+
+				if(socket !== undefined) {
+
+					//Listen for output
+					socket.on('output', function(data) {
+
+						if(data.length) {
+							//loop through results
+							for(var x = 0; x < data.length; x = x + 1) {
+								var message = document.createElement('div');
+								message.setAttribute('class', 'class-message');
+								message.textContent = data[x].name + ': ' + data[x].message;
+								
+								//Append
+								messages.insertBefore(message, messages.firstChild);
+								messages.appendChild(message);
+
+								//The messages start scrolling when they reach bottom
+								messages.scrollTop = messages.scrollHeight;
+
+							}
+						}
+					});
+
+					//Listen for a status
+					socket.on('status', function(data){
+						setStatus((typeof data === 'object') ? data.message : data);
+
+						if(data.clear === true){
+							textarea.value = '';
+						}
+					});
+
+					// Listen for keydown
+					textarea.addEventListener('keydown', function(event) {
+						var self = this,
+							name = chatName.value;
+
+						if(event.which === 13 && event.shiftKey === false){
+							socket.emit('input', {
+								name: name,
+								message: self.value
+							});
+							if(event.preventDefault) event.preventDefault(); // This should fix it
+        						return false;
+							//Empty the text field after pressing enter
+							event.preventDefault();
+						}
+					});
+				}
+
+			})();
+		</script>
+	</body>
+</html>
